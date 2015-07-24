@@ -7,47 +7,68 @@ object ScalazTaskExample extends App {
 
   def onClick(button: Button): Task[Button] =
     Task.async[Button] { f =>
-      button.setOnClickListener(new OnClickListener {
-        override def onClick(b: Button): Unit = f(\/-(b))
+      button.setOnClickListener(new LoggingOnClickListener {
+        override def onClick(b: Button): Unit = {
+          super.onClick(b)
+          f(\/-(b))
+        }
       })
     }
 
   def profileImg(imgUrl: String): Task[Array[Byte]] =
     Task.async[Array[Byte]] {
       f =>
-        SNSClient.getImageAsync(imgUrl, new SimpleCallback[Array[Byte], Exception] {
-          override def onSuccess(imgData: Array[Byte]): Unit = f(\/-(imgData))
+        SNSClient.getImageAsync(imgUrl, new LoggingSimpleCallback[Array[Byte], Exception] {
+          override def onSuccess(imgData: Array[Byte]): Unit = {
+            super.onSuccess(imgData)
+            f(\/-(imgData))
+          }
 
-          override def onFailure(e: Exception): Unit = f(-\/(e))
+          override def onFailure(e: Exception): Unit = {
+            super.onFailure(e)
+            f(-\/(e))
+          }
         })
     }
 
   def profileJson(url: String): Task[String] =
     Task.async[String] {
       f =>
-        SNSClient.getProfileAsync(url, new SimpleCallback[String, Exception] {
-          override def onSuccess(json: String): Unit = f(\/-(json))
+        SNSClient.getProfileAsync(url, new LoggingSimpleCallback[String, Exception] {
+          override def onSuccess(json: String): Unit = {
+            super.onSuccess(json)
+            f(\/-(json))
+          }
 
-          override def onFailure(e: Exception): Unit = f(-\/(e))
+          override def onFailure(e: Exception): Unit = {
+            super.onFailure(e)
+            f(-\/(e))
+          }
         })
     }
 
   def parse(json: String): Task[String] =
     Task.async[String] {
       f =>
-        SNSJSONParser.extractProfileUrlAsync(json, new SimpleCallback[String, Exception] {
-          override def onSuccess(json: String): Unit = f(\/-(json))
+        SNSJSONParser.extractProfileUrlAsync(json, new LoggingSimpleCallback[String, Exception] {
+          override def onSuccess(json: String): Unit = {
+            super.onSuccess(json)
+            f(\/-(json))
+          }
 
-          override def onFailure(e: Exception): Unit = f(-\/(e))
+          override def onFailure(e: Exception): Unit = {
+            super.onFailure(e)
+            f(-\/(e))
+          }
         })
     }
 
 
   val dataTask: Task[Array[Byte]] = for {
     _ <- onClick(Button)
-    json <- profileJson("https://facebook.com/xxx")
-    imgUrl <- parse(json)
-    data <- profileImg(imgUrl)
+    json <- Task.fork(profileJson("https://facebook.com/xxx"))
+    imgUrl <- Task.fork(parse(json))
+    data <- Task.fork(profileImg(imgUrl))
   } yield data
 
   dataTask.runAsync {

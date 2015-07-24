@@ -8,8 +8,11 @@ object ScalaStdFutureWithListener extends App{
   def onClick(button:Button): Future[Button] = {
     val p = Promise[Button]()
     val f = p.future
-    button.setOnClickListener(new OnClickListener {
-      override def onClick(b: Button): Unit = p.success(b)
+    button.setOnClickListener(new LoggingOnClickListener {
+      override def onClick(b: Button): Unit = {
+        super.onClick(b)
+        p.success(b)
+      }
     })
     f
   }

@@ -66,9 +66,12 @@ object ScalazTaskExample extends App {
 
   val dataTask: Task[Array[Byte]] = for {
     _ <- onClick(Button)
-    json <- Task.fork(profileJson("https://facebook.com/xxx"))
-    imgUrl <- Task.fork(parse(json))
-    data <- Task.fork(profileImg(imgUrl))
+    json <- profileJson("https://facebook.com/xxx").handleWith { case t =>
+      t.printStackTrace()
+      profileJson("https://twitter.com/xxx")
+    }
+    imgUrl <- parse(json)
+    data <- profileImg(imgUrl)
   } yield data
 
   dataTask.runAsync {

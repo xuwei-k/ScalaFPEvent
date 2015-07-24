@@ -1,7 +1,6 @@
 package com.taisukeoe
 
-import scala.concurrent.{Promise, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Promise}
 
 object ScalaStdFutureWithListener extends App{
 

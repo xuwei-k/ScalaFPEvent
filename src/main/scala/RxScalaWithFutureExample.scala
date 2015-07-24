@@ -1,28 +1,28 @@
 package com.taisukeoe
 
-import rx.lang.scala.schedulers.ExecutionContextScheduler
 import rx.lang.scala.{Observable, Subscription}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object RxScalaWithFutureExample extends App {
-
   def onClick(button: Button): Observable[Button] =
-    Observable.create[Button] { obs =>
+    Observable { asSubscriber =>
       button.setOnClickListener(new LoggingOnClickListener {
         override def onClick(b: Button): Unit = {
           super.onClick(b)
-          obs.onNext(b)
+          asSubscriber.onNext(b)
         }
       })
-      new Subscription {}
     }
 
   import com.taisukeoe.ScalaStdFutureExample._
 
   val dataObservable: Observable[Array[Byte]] = for {
     _ <- onClick(Button)
-    json <- Observable.from(profileJson("https://facebook.com/xxx")).subscribeOn(ExecutionContextScheduler(global)).doOnError(t => println(t.getMessage))
+    json <- Observable.from(profileJson("https://facebook.com/xxx").recoverWith { case t =>
+      t.printStackTrace()
+      profileJson("https://twitter.com/xxx")
+    })
     imgUrl <- Observable.from(parse(json))
     data <- Observable.from(profileImg(imgUrl))
   } yield data

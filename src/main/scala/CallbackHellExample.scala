@@ -16,7 +16,8 @@ object CallbackHellExample extends App {
         override def onFailure(e: Exception): Unit = e.printStackTrace()
       })
 
-    override def onFailure(e: Exception): Unit = e.printStackTrace()
+    override def onFailure(e: Exception): Unit = {
+      e.printStackTrace()
+    }
   })
-
 }

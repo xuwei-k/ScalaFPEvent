@@ -1,83 +1,47 @@
 package com.taisukeoe
 
-import scala.concurrent.{Promise, Future}
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz._
 
 object ScalazContTExample extends App {
   def onClick(button: Button): ContT[Future, Unit, Button] =
-    ContT[Future, Unit, Button] { f =>
-      Future.successful(button.setOnClickListener(new LoggingOnClickListener {
+    ContT { f =>
+      button.setOnClickListener(new LoggingOnClickListener {
         override def onClick(b: Button): Unit = {
           super.onClick(b)
           f(b)
         }
-      }))
-    }
-
-  def profileImg(imgUrl: String): ContT[Future, Unit, Array[Byte]] =
-    ContT { f =>
-      val p = Promise[Array[Byte]]()
-      val future = p.future
-      SNSClient.getImageAsync(imgUrl, new LoggingSimpleCallback[Array[Byte], Exception] {
-        override def onSuccess(imgData: Array[Byte]): Unit = {
-          super.onSuccess(imgData)
-          p.success(imgData)
-        }
-        override def onFailure(e: Exception): Unit = {
-          super.onFailure(e)
-          p.failure(e)
-        }
       })
-      future.flatMap(f)
+      Future.successful(Unit)
     }
 
-  def profileJson(url: String): ContT[Future, Unit, String] =
-    ContT {
-      f =>
-        val p = Promise[String]()
-        val future = p.future
-        SNSClient.getProfileAsync(url, new LoggingSimpleCallback[String, Exception] {
-          override def onSuccess(json: String): Unit = {
-            super.onSuccess(json)
-            p.success(json)
-          }
-          override def onFailure(e: Exception): Unit = {
-            super.onFailure(e)
-            p.failure(e)
-          }
-        })
-        future.flatMap(f)
+  import ScalaStdFutureExample._
+
+  def profileImgCont(imgUrl: String): ContT[Future, Unit, Array[Byte]] =
+    ContT(profileImg(imgUrl).flatMap(_))
+
+  def profileJsonCont(url: String): ContT[Future, Unit, String] =
+    ContT(profileJson(url).flatMap(_))
+
+  def parseCont(json: String): ContT[Future, Unit, String] =
+    ContT(parse(json).flatMap(_))
+
+  def recover[T](failedCont: ContT[Future, Unit, T], recover: => Future[T]): ContT[Future, Unit, T] = ContT {
+    f => failedCont.run(f).recoverWith {
+      case t => t.printStackTrace()
+        recover.flatMap(f)
     }
+  }
 
-  def parse(json: String):ContT[Future, Unit, String] =
-    ContT {
-      f =>
-        val p = Promise[String]()
-        val future = p.future
-        SNSJSONParser.extractProfileUrlAsync(json, new LoggingSimpleCallback[String, Exception] {
-          override def onSuccess(url: String): Unit = {
-            super.onSuccess(url)
-            p.success(url)
-          }
-          override def onFailure(e: Exception): Unit = {
-            super.onFailure(e)
-            p.failure(e)
-          }
-        })
-        future.flatMap(f)
-    }
-
-
-  ContT
   val dataCont = for {
     b <- onClick(Button)
-    json <- profileJson("https://facebook.com/xxx")
-    imgUrl <- parse(json)
-    data <- profileImg(imgUrl)
+    json <- recover(profileJsonCont("https://facebook.com/xxx"), profileJson("https://twitter.com/xxx"))
+    imgUrl <- parseCont(json)
+    data <- profileImgCont(imgUrl)
   } yield data
 
-  dataCont.run{ba =>
+  dataCont.run { ba =>
     println(ba)
     Future.successful(Unit)
   }

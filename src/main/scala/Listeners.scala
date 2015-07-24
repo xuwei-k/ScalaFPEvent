@@ -1,7 +1,15 @@
 package com.taisukeoe
 
+import org.slf4j.LoggerFactory
+
 trait OnClickListener{
   def onClick(b:Button):Unit
+}
+trait LoggingOnClickListener extends OnClickListener{
+  lazy val logger = LoggerFactory.getLogger(classOf[LoggingOnClickListener])
+  override def onClick(b: Button): Unit = {
+    logger.debug(s"onClick ${Thread.currentThread().getName}")
+  }
 }
 trait Button{
   def setOnClickListener(l:OnClickListener):Unit

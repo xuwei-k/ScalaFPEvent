@@ -40,7 +40,7 @@ object ScalazContTExample extends App {
     }
   }
 
-  val dataCont = for {
+  val dataCont:Callback[Array[Byte]] = for {
     b <- onClickCont(Button)
     json <- recoverCont(profileJsonCont("https://facebook.com/xxx"), profileJsonFuture("https://twitter.com/xxx"))
     imgUrl <- parseCont(json)

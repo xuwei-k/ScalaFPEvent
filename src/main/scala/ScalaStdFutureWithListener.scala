@@ -4,7 +4,7 @@ import scala.concurrent.{Future, Promise}
 
 object ScalaStdFutureWithListener extends App{
 
-  def onClick(button:Button): Future[Button] = {
+  def onClickFuture(button:Button): Future[Button] = {
     val p = Promise[Button]()
     val f = p.future
     button.setOnClickListener(new LoggingOnClickListener {
@@ -16,7 +16,7 @@ object ScalaStdFutureWithListener extends App{
     f
   }
 
-  val clickFuture:Future[Button] = onClick(Button)
+  val clickFuture:Future[Button] = onClickFuture(Button)
 
   //clickFuture succeeds
   Button.click()

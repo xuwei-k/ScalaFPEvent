@@ -6,7 +6,7 @@ import rx.lang.scala.{Observable, Subscription}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object RxScalaExample extends App {
-  def onClick(button: Button): Observable[Button] =
+  def onClickObs(button: Button): Observable[Button] =
     Observable { asSubscriber =>
       button.setOnClickListener(new LoggingOnClickListener {
         override def onClick(b: Button): Unit = {
@@ -16,7 +16,7 @@ object RxScalaExample extends App {
       })
     }
 
-  def profileJson(url: String): Observable[String] =
+  def profileJsonObs(url: String): Observable[String] =
     Observable { asSubscriber =>
       SNSClient.getProfileAsync(url, new LoggingSimpleCallback[String, Exception] {
         override def onSuccess(t: String): Unit = {
@@ -33,7 +33,7 @@ object RxScalaExample extends App {
       })
     }
 
-  def parse(json: String): Observable[String] =
+  def parseFutureObs(json: String): Observable[String] =
     Observable { asSubscriber =>
       SNSJSONParser.extractProfileUrlAsync(json, new LoggingSimpleCallback[String, Exception] {
         override def onSuccess(t: String): Unit = {
@@ -50,7 +50,7 @@ object RxScalaExample extends App {
       })
     }
 
-  def profileImg(imgUrl: String): Observable[Array[Byte]] =
+  def profileImgObs(imgUrl: String): Observable[Array[Byte]] =
     Observable { asSubscriber =>
       SNSClient.getImageAsync(imgUrl, new LoggingSimpleCallback[Array[Byte], Exception] {
         override def onSuccess(t: Array[Byte]): Unit = {
@@ -69,13 +69,13 @@ object RxScalaExample extends App {
 
 
   val dataObservable: Observable[Array[Byte]] = for {
-    _ <- onClick(Button)
-    json <- profileJson("https://facebook.com/xxx").onErrorResumeNext { t =>
+    _ <- onClickObs(Button)
+    json <- profileJsonObs("https://facebook.com/xxx").onErrorResumeNext { t =>
       t.printStackTrace()
-      profileJson("https://twitter.com/xxx")
+      profileJsonObs("https://twitter.com/xxx")
     }
-    imgUrl <- parse(json)
-    data <- profileImg(imgUrl)
+    imgUrl <- parseFutureObs(json)
+    data <- profileImgObs(imgUrl)
   } yield data
 
   dataObservable.foreach(println(_))

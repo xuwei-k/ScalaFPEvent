@@ -7,12 +7,12 @@ import scala.util.{Failure, Success}
 object ScalaStdFutureExample extends App {
   val dataFuture: Future[Array[Byte]] =
     for {
-      json <- profileJson("https://facebook.com/xxx").recoverWith { case t =>
+      json <- profileJsonFuture("https://facebook.com/xxx").recoverWith { case t =>
         t.printStackTrace()
-        profileJson("https://twitter.com/xxx")
+        profileJsonFuture("https://twitter.com/xxx")
       }
-      imgUrl <- parse(json)
-      data <- profileImg(imgUrl)
+      imgUrl <- parseFuture(json)
+      data <- profileImgFuture(imgUrl)
     } yield data
 
   dataFuture.onComplete {
@@ -20,7 +20,7 @@ object ScalaStdFutureExample extends App {
     case Failure(t) => t.printStackTrace()
   }
 
-  def profileImg(imgUrl: String): Future[Array[Byte]] = {
+  def profileImgFuture(imgUrl: String): Future[Array[Byte]] = {
     val p = Promise[Array[Byte]]()
     val f = p.future
     SNSClient.getImageAsync(imgUrl, new LoggingSimpleCallback[Array[Byte], Exception] {
@@ -37,7 +37,7 @@ object ScalaStdFutureExample extends App {
     f
   }
 
-  def profileJson(url: String): Future[String] = {
+  def profileJsonFuture(url: String): Future[String] = {
     val p = Promise[String]()
     val f = p.future
     SNSClient.getProfileAsync(url, new LoggingSimpleCallback[String, Exception] {
@@ -54,7 +54,7 @@ object ScalaStdFutureExample extends App {
     f
   }
 
-  def parse(json: String): Future[String] = {
+  def parseFuture(json: String): Future[String] = {
     val p = Promise[String]()
     val f = p.future
     SNSJSONParser.extractProfileUrlAsync(json, new LoggingSimpleCallback[String, Exception] {

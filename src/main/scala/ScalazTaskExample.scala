@@ -5,7 +5,7 @@ import scalaz.{-\/, \/-}
 
 object ScalazTaskExample extends App {
 
-  def onClick(button: Button): Task[Button] =
+  def onClickTask(button: Button): Task[Button] =
     Task.async[Button] { f =>
       button.setOnClickListener(new LoggingOnClickListener {
         override def onClick(b: Button): Unit = {
@@ -15,7 +15,7 @@ object ScalazTaskExample extends App {
       })
     }
 
-  def profileImg(imgUrl: String): Task[Array[Byte]] =
+  def profileImgTask(imgUrl: String): Task[Array[Byte]] =
     Task.async[Array[Byte]] {
       f =>
         SNSClient.getImageAsync(imgUrl, new LoggingSimpleCallback[Array[Byte], Exception] {
@@ -31,7 +31,7 @@ object ScalazTaskExample extends App {
         })
     }
 
-  def profileJson(url: String): Task[String] =
+  def profileJsonTask(url: String): Task[String] =
     Task.async[String] {
       f =>
         SNSClient.getProfileAsync(url, new LoggingSimpleCallback[String, Exception] {
@@ -47,7 +47,7 @@ object ScalazTaskExample extends App {
         })
     }
 
-  def parse(json: String): Task[String] =
+  def parseTask(json: String): Task[String] =
     Task.async[String] {
       f =>
         SNSJSONParser.extractProfileUrlAsync(json, new LoggingSimpleCallback[String, Exception] {
@@ -65,13 +65,13 @@ object ScalazTaskExample extends App {
 
 
   val dataTask: Task[Array[Byte]] = for {
-    _ <- onClick(Button)
-    json <- profileJson("https://facebook.com/xxx").handleWith { case t =>
+    _ <- onClickTask(Button)
+    json <- profileJsonTask("https://facebook.com/xxx").handleWith { case t =>
       t.printStackTrace()
-      profileJson("https://twitter.com/xxx")
+      profileJsonTask("https://twitter.com/xxx")
     }
-    imgUrl <- parse(json)
-    data <- profileImg(imgUrl)
+    imgUrl <- parseTask(json)
+    data <- profileImgTask(imgUrl)
   } yield data
 
   dataTask.runAsync {

@@ -5,8 +5,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scalaz._
 
 object ScalazContTExample extends App {
-  def onClick(button: Button): ContT[Future, Unit, Button] =
-    ContT { f =>
+  type Callback[T] = ContT[Future, Unit, T]
+
+  object Callback {
+    def apply[T](f: (T => Future[Unit]) => Future[Unit]): Callback[T] = ContT[Future, Unit, T].apply(f)
+  }
+
+  def onClickCont(button: Button): Callback[Button] =
+    Callback { f =>
       button.setOnClickListener(new LoggingOnClickListener {
         override def onClick(b: Button): Unit = {
           super.onClick(b)
@@ -18,16 +24,16 @@ object ScalazContTExample extends App {
 
   import ScalaStdFutureExample._
 
-  def profileImgCont(imgUrl: String): ContT[Future, Unit, Array[Byte]] =
-    ContT(profileImg(imgUrl).flatMap(_))
+  def profileImgCont(imgUrl: String): Callback[Array[Byte]] =
+    Callback(profileImgFuture(imgUrl).flatMap(_))
 
-  def profileJsonCont(url: String): ContT[Future, Unit, String] =
-    ContT(profileJson(url).flatMap(_))
+  def profileJsonCont(url: String): Callback[String] =
+    Callback(profileJsonFuture(url).flatMap(_))
 
-  def parseCont(json: String): ContT[Future, Unit, String] =
-    ContT(parse(json).flatMap(_))
+  def parseCont(json: String): Callback[String] =
+    Callback(parseFuture(json).flatMap(_))
 
-  def recover[T](failedCont: ContT[Future, Unit, T], recover: => Future[T]): ContT[Future, Unit, T] = ContT {
+  def recoverCont[T](failedCont: Callback[T], recover: => Future[T]): Callback[T] = Callback {
     f => failedCont.run(f).recoverWith {
       case t => t.printStackTrace()
         recover.flatMap(f)
@@ -35,8 +41,8 @@ object ScalazContTExample extends App {
   }
 
   val dataCont = for {
-    b <- onClick(Button)
-    json <- recover(profileJsonCont("https://facebook.com/xxx"), profileJson("https://twitter.com/xxx"))
+    b <- onClickCont(Button)
+    json <- recoverCont(profileJsonCont("https://facebook.com/xxx"), profileJsonFuture("https://twitter.com/xxx"))
     imgUrl <- parseCont(json)
     data <- profileImgCont(imgUrl)
   } yield data

@@ -30,13 +30,13 @@ object FreeExample extends App {
   val interpreter1: Program ~> Task =
     new (Program ~> Task) {
       override def apply[A](fa: Program[A]) = fa match {
-        case OnClick(button) => onClick(button)
+        case OnClick(button) => onClickTask(button)
 
-        case ProfileImage(imageUrl) => profileImg(imageUrl)
+        case ProfileImage(imageUrl) => profileImgTask(imageUrl)
 
-        case ProfileJson(url) => profileJson(url)
+        case ProfileJson(url) => profileJsonTask(url)
 
-        case ParseJson(json) => parse(json)
+        case ParseJson(json) => parseTask(json)
       }
     }
 
@@ -70,7 +70,7 @@ object FreeExample extends App {
         } yield json
       )(interpreter).handleWith { case t =>
         t.printStackTrace()
-        profileJson("https://twitter.com/xxx")
+        profileJsonTask("https://twitter.com/xxx")
       }
       data <-
       Free.runFC(

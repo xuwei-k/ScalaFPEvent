@@ -5,7 +5,7 @@ import rx.lang.scala.{Observable, Subscription}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object RxScalaWithFutureExample extends App {
-  def onClick(button: Button): Observable[Button] =
+  def onClickObs(button: Button): Observable[Button] =
     Observable { asSubscriber =>
       button.setOnClickListener(new LoggingOnClickListener {
         override def onClick(b: Button): Unit = {
@@ -18,13 +18,13 @@ object RxScalaWithFutureExample extends App {
   import com.taisukeoe.ScalaStdFutureExample._
 
   val dataObservable: Observable[Array[Byte]] = for {
-    _ <- onClick(Button)
-    json <- Observable.from(profileJson("https://facebook.com/xxx").recoverWith { case t =>
+    _ <- onClickObs(Button)
+    json <- Observable.from(profileJsonFuture("https://facebook.com/xxx").recoverWith { case t =>
       t.printStackTrace()
-      profileJson("https://twitter.com/xxx")
+      profileJsonFuture("https://twitter.com/xxx")
     })
-    imgUrl <- Observable.from(parse(json))
-    data <- Observable.from(profileImg(imgUrl))
+    imgUrl <- Observable.from(parseFuture(json))
+    data <- Observable.from(profileImgFuture(imgUrl))
   } yield data
 
   dataObservable.foreach(println(_))

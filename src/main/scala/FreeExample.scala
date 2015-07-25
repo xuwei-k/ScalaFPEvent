@@ -3,6 +3,8 @@ package com.taisukeoe
 import scalaz.concurrent.Task
 import scalaz._
 import scalaz.Free.liftFC
+import scalaz.Free.FreeC
+import scalaz.syntax.id._
 
 sealed abstract class Program[A] extends Product with Serializable
 
@@ -12,7 +14,11 @@ final case class ProfileImage(imageUrl: String) extends Program[Array[Byte]]
 
 final case class ProfileJson(url: String) extends Program[String]
 
+final case class ProfileJsonE(url: String) extends Program[Throwable \/ String]
+
 final case class ParseJson(json: String) extends Program[String]
+
+final case class DoNothing[A](value: A) extends Program[A]
 
 object FreeExample extends App {
 
@@ -60,28 +66,19 @@ object FreeExample extends App {
   val task1: Task[Array[Byte]] =
     Free.runFC(program("https://facebook.com/xxx"))(interpreter1)
 
-  def getTaskFrom(interpreter: Program ~> Task): Task[Array[Byte]] =
-    for {
-      json <-
-      Free.runFC(
-        for {
-          _ <- liftFC(OnClick(Button))
-          json <- liftFC(ProfileJson("https://facebook.com/xxx"))
-        } yield json
-      )(interpreter).handleWith { case t =>
-        t.printStackTrace()
-        profileJsonTask("https://twitter.com/xxx")
-      }
-      data <-
-      Free.runFC(
-        for {
-          imgUrl <- liftFC(ParseJson(json))
-          dt <- liftFC(ProfileImage(imgUrl))
-        } yield dt
-      )(interpreter)
-    } yield data
+  def getTaskFrom: FreeC[Program, Array[Byte]] =
+    (for {
+      _    <- liftFC(OnClick(Button))
+      fb   <- liftFC(ProfileJsonE("https://facebook.com/xxx"))
+      json <- liftFC(fb.fold(
+        t => ProfileJson("https://twitter.com/xxx").unsafeTap(_ => t.printStackTrace()),
+        v => DoNothing(v)
+      ))
+      url  <- liftFC(ParseJson(json))
+      data <- liftFC(ProfileImage(url))
+    } yield data)
 
-  getTaskFrom(interpreter1).runAsync {
+  Free.runFC(getTaskFrom)(interpreter1).runAsync {
     case \/-(data) => println(data)
     case -\/(e) => e.printStackTrace()
   }

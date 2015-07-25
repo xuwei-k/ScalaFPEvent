@@ -8,7 +8,7 @@ object ScalazContTExample extends App {
   type Callback[T] = ContT[Future, Unit, T]
 
   object Callback {
-    def apply[T](f: (T => Future[Unit]) => Future[Unit]): Callback[T] = ContT[Future, Unit, T].apply(f)
+    def apply[T](f: (T => Future[Unit]) => Future[Unit]): Callback[T] = ContT.apply[Future, Unit, T](f)
   }
 
   def onClickCont(button: Button): Callback[Button] =

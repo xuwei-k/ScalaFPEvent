@@ -10,9 +10,7 @@ final case class ProfileImage(imageUrl: String) extends Program[Array[Byte]]
 final case class ProfileJson(url: String) extends Program[String]
 final case class ParseJson(json: String) extends Program[String]
 
-object FreeExample {
-
-  type Callback
+object FreeExample extends App{
 
   // url はここの引数で取るべきなのかはよくわからなかった
   def program(url: String) = for{
@@ -27,33 +25,53 @@ object FreeExample {
       override def apply[A](fa: Program[A]) = fa match {
         case OnClick(button) =>
           Task.async[Button] { f =>
-            button.setOnClickListener(new OnClickListener {
-              override def onClick(b: Button): Unit =
+            button.setOnClickListener(new LoggingOnClickListener {
+              override def onClick(b: Button): Unit ={
+                super.onClick(b)
                 f(\/-(b))
+              }
             })
           }
         case ProfileImage(imageUrl) =>
           Task.async[Array[Byte]] { f =>
-            SNSClient.getImageAsync(imageUrl, new SimpleCallback[Array[Byte], Exception] {
-              override def onSuccess(imgData: Array[Byte]): Unit = f(\/-(imgData))
+            SNSClient.getImageAsync(imageUrl, new LoggingSimpleCallback[Array[Byte], Exception] {
+              override def onSuccess(imgData: Array[Byte]): Unit = {
+                super.onSuccess(imgData)
+                f(\/-(imgData))
+              }
 
-              override def onFailure(e: Exception): Unit = f(-\/(e))
+              override def onFailure(e: Exception): Unit = {
+                super.onFailure(e)
+                f(-\/(e))
+              }
             })
           }
         case ProfileJson(url) =>
           Task.async[String] { f =>
-            SNSClient.getProfileAsync(url, new SimpleCallback[String, Exception] {
-              override def onSuccess(json: String): Unit = f(\/-(json))
+            SNSClient.getProfileAsync(url, new LoggingSimpleCallback[String, Exception] {
+              override def onSuccess(json: String): Unit = {
+                super.onSuccess(json)
+                f(\/-(json))
+              }
 
-              override def onFailure(e: Exception): Unit = f(-\/(e))
+              override def onFailure(e: Exception): Unit = {
+                super.onFailure(e)
+                f(-\/(e))
+              }
             })
           }
         case ParseJson(json) =>
           Task.async[String] { f =>
-            SNSJSONParser.extractProfileUrlAsync(json, new SimpleCallback[String, Exception] {
-              override def onSuccess(json: String): Unit = f(\/-(json))
+            SNSJSONParser.extractProfileUrlAsync(json, new LoggingSimpleCallback[String, Exception] {
+              override def onSuccess(json: String): Unit = {
+                super.onSuccess(json)
+                f(\/-(json))
+              }
 
-              override def onFailure(e: Exception): Unit = f(-\/(e))
+              override def onFailure(e: Exception): Unit = {
+                super.onFailure(e)
+                f(-\/(e))
+              }
             })
           }
       }
@@ -84,4 +102,7 @@ object FreeExample {
     case -\/(e) => e.printStackTrace()
   }
 
+  Button.click()
+  Thread.sleep(2000)
+  Button.click()
 }

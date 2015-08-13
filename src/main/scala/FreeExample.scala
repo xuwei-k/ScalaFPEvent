@@ -18,8 +18,6 @@ final case class ProfileJsonE(url: String) extends Program[Throwable \/ String]
 
 final case class ParseJson(json: String) extends Program[String]
 
-final case class DoNothing[A](value: A) extends Program[A]
-
 object FreeExample extends App {
 
   // url はここの引数で取るべきなのかはよくわからなかった
@@ -70,10 +68,10 @@ object FreeExample extends App {
     (for {
       _    <- liftFC(OnClick(Button))
       fb   <- liftFC(ProfileJsonE("https://facebook.com/xxx"))
-      json <- liftFC(fb.fold(
-        t => ProfileJson("https://twitter.com/xxx").unsafeTap(_ => t.printStackTrace()),
-        v => DoNothing(v)
-      ))
+      json <- fb.fold(
+        t => liftFC(ProfileJson("https://twitter.com/xxx").unsafeTap(_ => t.printStackTrace())),
+        v => Free.point[({type l[a] = Coyoneda[Program, a]})#l, String](v)
+      )
       url  <- liftFC(ParseJson(json))
       data <- liftFC(ProfileImage(url))
     } yield data)
